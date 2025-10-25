@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lebo"
+version = "0.1.0"
+description = "Lebwohl-Lasher Monte Carlo simulation with accelerated computing methods (Numba, Cython, MPI)"
+authors = [{ name = "Nick Hardman" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "pytest",
+    "pytest-benchmark",
+    "numba",
+    "cython",
+    "mpi4py",
+    "matplotlib"
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q"
+testpaths = ["tests"]
+pythonpath = ["."]
+
