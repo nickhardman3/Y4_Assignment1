@@ -1,0 +1,8 @@
+numpy
+pytest
+pytest-benchmark
+numba
+cython
+mpi4py
+matplotlib
+
