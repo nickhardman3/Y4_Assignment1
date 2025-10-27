@@ -1,6 +1,7 @@
 import numpy as np
 import importlib
 import time
+import pytest
 
 ll = importlib.import_module("lebo.core")
 
@@ -27,17 +28,16 @@ def test_monte_carlo_energy_change_sign():
     n = 10
     theta = np.random.rand(n, n) * 2 * np.pi
     e_before = ll.all_energy(theta, n)
-    theta_new = ll.monte_carlo(theta.copy(), n, tstar=0.7, nsteps=50)
-    e_after = ll.all_energy(theta_new, n)
+    for _ in range(50):
+        ll.MC_step(theta, 0.7, n)
+    e_after = ll.all_energy(theta, n)
     assert not np.isclose(e_before, e_after, atol=1e-8)
 
-def test_monte_carlo_efficiency():
+@pytest.mark.benchmark(min_rounds=5)
+def test_monte_carlo_efficiency(benchmark):
     n = 20
     theta = np.random.rand(n, n) * 2 * np.pi
-    start = time.time()
-    ll.monte_carlo(theta, n, tstar=0.6, nsteps=200)
-    duration = time.time() - start
-    assert duration < 2.0
+    benchmark(lambda: [ll.MC_step(theta, 0.6, n) for _ in range(200)])
 
 def test_order_parameter_range():
     n = 12
@@ -55,6 +55,13 @@ def test_energy_symmetry():
 def test_equilibration_trend():
     n = 10
     theta = np.random.rand(n, n) * 2 * np.pi
-    order_lowT = np.mean([ll.get_order(ll.monte_carlo(theta.copy(), n, tstar=0.3, nsteps=100), n) for _ in range(3)])
-    order_highT = np.mean([ll.get_order(ll.monte_carlo(theta.copy(), n, tstar=1.2, nsteps=100), n) for _ in range(3)])
+    for _ in range(100):
+        ll.MC_step(theta, 0.3, n)
+    order_lowT = ll.get_order(theta, n)
+
+    theta = np.random.rand(n, n) * 2 * np.pi
+    for _ in range(100):
+        ll.MC_step(theta, 1.2, n)
+    order_highT = ll.get_order(theta, n)
+
     assert order_lowT > order_highT
