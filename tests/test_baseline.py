@@ -53,14 +53,15 @@ def test_energy_symmetry():
     assert np.isclose(e1, e2, atol=1e-8)
 
 def test_equilibration_trend():
+    np.random.seed(0)
     n = 10
     theta = np.random.rand(n, n) * 2 * np.pi
-    for _ in range(100):
+    for _ in range(300):
         ll.MC_step(theta, 0.3, n)
     order_lowT = ll.get_order(theta, n)
 
     theta = np.random.rand(n, n) * 2 * np.pi
-    for _ in range(100):
+    for _ in range(300):
         ll.MC_step(theta, 1.2, n)
     order_highT = ll.get_order(theta, n)
 
