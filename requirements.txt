@@ -5,4 +5,4 @@ numba
 cython
 mpi4py
 matplotlib
-
+scipy

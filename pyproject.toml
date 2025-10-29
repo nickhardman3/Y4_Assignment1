@@ -16,7 +16,8 @@ dependencies = [
     "numba",
     "cython",
     "mpi4py",
-    "matplotlib"
+    "matplotlib",
+    "scipy"
 ]
 
 [tool.pytest.ini_options]
