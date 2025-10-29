@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from numba import njit
 
-@njit
+
+@njit(nopython=True, cache=True)
 def one_energy(arr, ix, iy, nmax):
     en = 0.0
     ixp = (ix + 1) % nmax
@@ -23,7 +24,8 @@ def one_energy(arr, ix, iy, nmax):
     en += 0.5 * (1.0 - 3.0 * np.cos(ang)**2)
     return en
 
-@njit
+
+@njit(nopython=True, cache=True)
 def all_energy(arr, nmax):
     enall = 0.0
     for i in range(nmax):
@@ -31,7 +33,8 @@ def all_energy(arr, nmax):
             enall += one_energy(arr, i, j, nmax)
     return enall
 
-@njit
+
+@njit(nopython=True, cache=True)
 def get_order(arr, nmax):
     Qab = np.zeros((3, 3))
     delta = np.eye(3)
@@ -49,15 +52,12 @@ def get_order(arr, nmax):
                     s += 3 * lab[a, i, j] * lab[b, i, j] - delta[a, b]
             Qab[a, b] = s
     Qab = Qab / (2 * nmax * nmax)
-    trace = Qab[0, 0] + Qab[1, 1] + Qab[2, 2]
-    p1 = Qab[0, 0] * Qab[1, 1] - Qab[0, 1] * Qab[1, 0]
-    p2 = Qab[0, 0] * Qab[2, 2] - Qab[0, 2] * Qab[2, 0]
-    p3 = Qab[1, 1] * Qab[2, 2] - Qab[1, 2] * Qab[2, 1]
-    det = Qab[0, 0] * p3 - Qab[0, 1] * (Qab[1, 2] * Qab[2, 0] - Qab[1, 0] * Qab[2, 2]) + Qab[0, 2] * (Qab[1, 0] * Qab[2, 1] - Qab[1, 1] * Qab[2, 0])
-    disc = np.sqrt(max(0.0, (trace**2) / 4 - det))
-    return trace / 2 + disc
+    vals, _ = np.linalg.eig(Qab)
+    smax = np.max(np.real(vals))
+    return smax
 
-@njit
+
+@njit(nopython=True, cache=True)
 def MC_step(arr, Ts, nmax):
     scale = 0.1 + Ts
     accept = 0
@@ -82,8 +82,10 @@ def MC_step(arr, Ts, nmax):
                     arr[ix, iy] -= ang
     return accept / (nmax * nmax)
 
+
 def initdat(nmax):
     return np.random.random_sample((nmax, nmax)) * 2.0 * np.pi
+
 
 def plotdat(arr, pflag, nmax):
     if pflag == 0:
@@ -113,6 +115,7 @@ def plotdat(arr, pflag, nmax):
     ax.set_aspect('equal')
     plt.show()
 
+
 def savedat(arr, nsteps, Ts, runtime, ratio, energy, order, nmax):
     current_datetime = datetime.datetime.now().strftime("%a-%d-%b-%Y-at-%I-%M-%S%p")
     filename = f"LL-Output-{current_datetime}.txt"
@@ -128,6 +131,7 @@ def savedat(arr, nsteps, Ts, runtime, ratio, energy, order, nmax):
         print("#=====================================================", file=f)
         for i in range(nsteps + 1):
             print(f"   {i:05d}    {ratio[i]:6.4f} {energy[i]:12.4f}  {order[i]:6.4f} ", file=f)
+
 
 def main(program, nsteps, nmax, temp, pflag):
     lattice = initdat(nmax)
@@ -147,6 +151,7 @@ def main(program, nsteps, nmax, temp, pflag):
     print(f"{program}: Size: {nmax}, Steps: {nsteps}, T*: {temp:5.3f}: Order: {order[-1]:5.3f}, Time: {runtime:8.6f} s")
     savedat(lattice, nsteps, temp, runtime, ratio, energy, order, nmax)
     plotdat(lattice, pflag, nmax)
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 5:

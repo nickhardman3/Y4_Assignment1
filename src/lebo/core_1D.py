@@ -5,19 +5,88 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+
+def one_energy(arr, ix, iy, nmax):
+    ixp = (ix + 1) % nmax
+    ixm = (ix - 1) % nmax
+    iyp = (iy + 1) % nmax
+    iym = (iy - 1) % nmax
+    neighbors = np.array([
+        arr[ixp, iy],
+        arr[ixm, iy],
+        arr[ix, iyp],
+        arr[ix, iym]
+    ])
+    ang = arr[ix, iy] - neighbors
+    en = 0.5 * np.sum(1.0 - 3.0 * np.cos(ang) ** 2)
+    return en
+
+
+def all_energy(arr, nmax):
+    ixp = np.roll(arr, -1, axis=0)
+    ixm = np.roll(arr, 1, axis=0)
+    iyp = np.roll(arr, -1, axis=1)
+    iym = np.roll(arr, 1, axis=1)
+    en = 0.5 * (1.0 - 3.0 * np.cos(arr - ixp) ** 2)
+    en += 0.5 * (1.0 - 3.0 * np.cos(arr - ixm) ** 2)
+    en += 0.5 * (1.0 - 3.0 * np.cos(arr - iyp) ** 2)
+    en += 0.5 * (1.0 - 3.0 * np.cos(arr - iym) ** 2)
+    return np.sum(en)
+
+
+def get_order(arr, nmax):
+    lab = np.zeros((3, nmax, nmax))
+    lab[0] = np.cos(arr)
+    lab[1] = np.sin(arr)
+    Qab = np.zeros((3, 3))
+    for a in range(3):
+        for b in range(3):
+            Qab[a, b] = np.sum(3 * lab[a] * lab[b] - (a == b))
+    Qab = Qab / (2 * nmax * nmax)
+    vals = np.linalg.eigvals(Qab)
+    return np.max(vals.real)
+
+
+def MC_step(arr, Ts, nmax):
+    scale = 0.1 + Ts
+    accept = 0
+    xran = np.random.randint(0, nmax, (nmax, nmax))
+    yran = np.random.randint(0, nmax, (nmax, nmax))
+    aran = np.random.normal(0.0, scale, (nmax, nmax))
+    for i in range(nmax):
+        for j in range(nmax):
+            ix = xran[i, j]
+            iy = yran[i, j]
+            ang = aran[i, j]
+            en0 = one_energy(arr, ix, iy, nmax)
+            arr[ix, iy] += ang
+            en1 = one_energy(arr, ix, iy, nmax)
+            if en1 <= en0:
+                accept += 1
+            else:
+                boltz = np.exp(-(en1 - en0) / Ts)
+                if boltz >= np.random.random():
+                    accept += 1
+                else:
+                    arr[ix, iy] -= ang
+    return accept / (nmax * nmax)
+
+
 def initdat(nmax):
     return np.random.random_sample((nmax, nmax)) * 2.0 * np.pi
+
 
 def plotdat(arr, pflag, nmax):
     if pflag == 0:
         return
-    u, v = np.cos(arr), np.sin(arr)
-    x, y = np.arange(nmax), np.arange(nmax)
+    u = np.cos(arr)
+    v = np.sin(arr)
+    x = np.arange(nmax)
+    y = np.arange(nmax)
+    cols = np.zeros((nmax, nmax))
     if pflag == 1:
         mpl.rc('image', cmap='rainbow')
-        cols = np.zeros((nmax, nmax))
-        for i in range(nmax):
-            cols[i] = one_energy_vector(arr, i, nmax)
+        cols = np.vectorize(lambda i, j: one_energy(arr, i, j, nmax))(np.arange(nmax)[:, None], np.arange(nmax))
         norm = plt.Normalize(cols.min(), cols.max())
     elif pflag == 2:
         mpl.rc('image', cmap='hsv')
@@ -27,11 +96,12 @@ def plotdat(arr, pflag, nmax):
         mpl.rc('image', cmap='gist_gray')
         cols = np.zeros_like(arr)
         norm = plt.Normalize(vmin=0, vmax=1)
-    quiveropts = dict(headlength=0, pivot='middle', headwidth=1, scale=1.1*nmax)
+    quiveropts = dict(headlength=0, pivot='middle', headwidth=1, scale=1.1 * nmax)
     fig, ax = plt.subplots()
     ax.quiver(x, y, u, v, cols, norm=norm, **quiveropts)
     ax.set_aspect('equal')
     plt.show()
+
 
 def savedat(arr, nsteps, Ts, runtime, ratio, energy, order, nmax):
     current_datetime = datetime.datetime.now().strftime("%a-%d-%b-%Y-at-%I-%M-%S%p")
@@ -49,60 +119,6 @@ def savedat(arr, nsteps, Ts, runtime, ratio, energy, order, nmax):
         for i in range(nsteps + 1):
             print(f"   {i:05d}    {ratio[i]:6.4f} {energy[i]:12.4f}  {order[i]:6.4f} ", file=f)
 
-# ============================================================
-
-def all_energy(arr, nmax):
-    dxp = np.roll(arr, -1, axis=0) - arr
-    dxm = np.roll(arr, 1, axis=0) - arr
-    dyp = np.roll(arr, -1, axis=1) - arr
-    dym = np.roll(arr, 1, axis=1) - arr
-    en = 0.5 * ((1 - 3*np.cos(dxp)**2)
-              + (1 - 3*np.cos(dxm)**2)
-              + (1 - 3*np.cos(dyp)**2)
-              + (1 - 3*np.cos(dym)**2))
-    return np.sum(en)
-
-def one_energy_vector(arr, ix, nmax):
-    row = arr[ix]
-    ang_right = row - arr[(ix + 1) % nmax]
-    ang_left  = row - arr[(ix - 1) % nmax]
-    ang_up    = row - np.roll(row, 1)
-    ang_down  = row - np.roll(row, -1)
-    en = 0.5 * ((1.0 - 3.0 * np.cos(ang_right)**2)
-              + (1.0 - 3.0 * np.cos(ang_left)**2)
-              + (1.0 - 3.0 * np.cos(ang_up)**2)
-              + (1.0 - 3.0 * np.cos(ang_down)**2))
-    return en
-
-def get_order(arr, nmax):
-    lab = np.array([np.cos(arr), np.sin(arr), np.zeros_like(arr)])
-    Qab = np.einsum('aij,bij->ab', lab, lab)
-    delta = np.eye(3)
-    Qab = (3 * Qab - delta * nmax**2) / (2 * nmax**2)
-    vals, _ = np.linalg.eig(Qab)
-    return vals.max()
-
-# ============================================================
-
-def MC_step(arr, Ts, nmax):
-    scale = 0.1 + Ts
-    accept = 0
-    xran = np.random.randint(0, nmax, size=nmax*nmax)
-    yran = np.random.randint(0, nmax, size=nmax*nmax)
-    aran = np.random.normal(scale=scale, size=nmax*nmax)
-    for i in range(nmax * nmax):
-        ix, iy, ang = xran[i], yran[i], aran[i]
-        e0 = one_energy_vector(arr, ix, nmax)[iy]
-        arr[ix, iy] += ang
-        e1 = one_energy_vector(arr, ix, nmax)[iy]
-        dE = e1 - e0
-        if dE <= 0 or np.exp(-dE / Ts) >= np.random.rand():
-            accept += 1
-        else:
-            arr[ix, iy] -= ang
-    return accept / (nmax * nmax)
-
-# ============================================================
 
 def main(program, nsteps, nmax, temp, pflag):
     lattice = initdat(nmax)
@@ -122,6 +138,7 @@ def main(program, nsteps, nmax, temp, pflag):
     print(f"{program}: Size: {nmax}, Steps: {nsteps}, T*: {temp:5.3f}: Order: {order[-1]:5.3f}, Time: {runtime:8.6f} s")
     savedat(lattice, nsteps, temp, runtime, ratio, energy, order, nmax)
     plotdat(lattice, pflag, nmax)
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 5:
