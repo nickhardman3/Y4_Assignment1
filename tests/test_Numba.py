@@ -54,3 +54,15 @@ def test_runtime_faster_than_core():
     t_numba = time.time() - start
 
     assert t_numba < 5 * t_core
+
+#@pytest.mark.benchmark(min_rounds=5)
+#def test_monte_carlo_efficiency_numba(benchmark):
+#    n = 50
+#    steps = 500
+#    theta = np.random.rand(n, n) * 2 * np.pi
+#
+#    def run_simulation():
+#        for _ in range(steps):
+#            numba_mod.MC_step(theta, 0.6, n)
+#
+#    benchmark(run_simulation)

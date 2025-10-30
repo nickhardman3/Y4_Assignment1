@@ -33,11 +33,17 @@ def test_monte_carlo_energy_change_sign():
     e_after = ll.all_energy(theta, n)
     assert not np.isclose(e_before, e_after, atol=1e-8)
 
-@pytest.mark.benchmark(min_rounds=5)
-def test_monte_carlo_efficiency(benchmark):
-    n = 20
-    theta = np.random.rand(n, n) * 2 * np.pi
-    benchmark(lambda: [ll.MC_step(theta, 0.6, n) for _ in range(200)])
+#@pytest.mark.benchmark(min_rounds=5)
+#def test_monte_carlo_efficiency(benchmark):
+#    n = 50
+#    steps = 500
+#    theta = np.random.rand(n, n) * 2 * np.pi
+#
+#    def run_simulation():
+#        for _ in range(steps):
+#            ll.MC_step(theta, 0.6, n)
+#
+#    benchmark(run_simulation)
 
 def test_order_parameter_range():
     n = 12

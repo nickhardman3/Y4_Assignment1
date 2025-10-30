@@ -60,3 +60,16 @@ def test_vector_vs_sequential_equivalence():
     e_vec = numpy_vec.all_energy(arr, n)
     e_seq = numpy_seq.all_energy(arr, n)
     assert np.isclose(e_vec, e_seq, rtol=1e-5, atol=1e-5)
+
+#@pytest.mark.parametrize("module", [numpy_vec, numpy_seq])
+#@pytest.mark.benchmark(min_rounds=5)
+#def test_monte_carlo_efficiency_numpy(benchmark, module):
+#    n = 50
+#    steps = 500
+#    theta = np.random.rand(n, n) * 2 * np.pi
+#
+#    def run_simulation():
+#        for _ in range(steps):
+#            module.MC_step(theta, 0.6, n)
+#
+#    benchmark(run_simulation)
