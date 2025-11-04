@@ -3,8 +3,8 @@ import importlib
 import pytest
 import time
 
-core = importlib.import_module("lebo.core")
-numba_mod = importlib.import_module("lebo.Numba")
+core = importlib.import_module("lebo.Core.core")
+numba_mod = importlib.import_module("lebo.Numba.Numba")
 
 def test_energy_equivalence_to_core():
     n = 10

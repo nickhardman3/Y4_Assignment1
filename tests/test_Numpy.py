@@ -3,9 +3,9 @@ import importlib
 import pytest
 import time
 
-core = importlib.import_module("lebo.core")
-numpy_vec = importlib.import_module("lebo.Numpy")
-numpy_seq = importlib.import_module("lebo.Numpy_Sequential")
+core = importlib.import_module("lebo.Core.core")
+numpy_vec = importlib.import_module("lebo.Numpy.Numpy")
+numpy_seq = importlib.import_module("lebo.Numpy.Numpy_Sequential")
 
 @pytest.mark.parametrize("module", [numpy_vec, numpy_seq])
 def test_all_energy_consistency_with_core(module):

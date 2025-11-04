@@ -3,7 +3,7 @@ import importlib
 import time
 import pytest
 
-ll = importlib.import_module("lebo.core")
+ll = importlib.import_module("lebo.Core.core")
 
 def test_one_energy_periodicity():
     n = 5
