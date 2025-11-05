@@ -26,5 +26,5 @@ Runtime profiling showed substantial performance improvements, with **MPI + Cyth
 
 ## Purpose
 
-This project demonstrates how Python, when combined with modern acceleration tools, can achieve near C-level performance for computational physics simulations.
+This project demonstrates how Python, when combined with modern acceleration tools, can achieve near C-level performance.
 
