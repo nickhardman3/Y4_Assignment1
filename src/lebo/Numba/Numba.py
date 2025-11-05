@@ -7,7 +7,7 @@ import matplotlib as mpl
 from numba import njit
 
 
-@njit(nopython=True, cache=True)
+@njit(nopython=True, cache=True) #@njit to compile with Numba for JIT optimisation
 def one_energy(arr, ix, iy, nmax):
     en = 0.0
     ixp = (ix + 1) % nmax
@@ -35,7 +35,7 @@ def all_energy(arr, nmax):
 
 
 @njit(nopython=True, cache=True)
-def get_order(arr, nmax):
+def get_order(arr, nmax): #using NumPy functions that Numba can compile efficiently
     Qab = np.zeros((3, 3))
     delta = np.eye(3)
     lab = np.empty((3, nmax, nmax))

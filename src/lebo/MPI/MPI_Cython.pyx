@@ -5,7 +5,7 @@ cimport numpy as cnp
 from libc.math cimport cos, sin, exp
 cimport cython
 
-def _decompose_rows(nmax, size, rank):
+def _decompose_rows(nmax, size, rank): #mix of MPI.py and Cython
     base = nmax // size
     extra = nmax % size
     if rank < extra:

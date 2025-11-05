@@ -28,7 +28,7 @@ def _halo_exchange(local, nmax, comm, rank, size):
     MPI.Request.Waitall(_halo_exchange_nb(local, comm, rank, size))
 
 
-@njit(cache=True, fastmath=True)
+@njit(cache=True, fastmath=True) #numba-compiled version of single-site energy calculation
 def _one_energy_nb(a, ix, iy, nmax):
     ixp = ix + 1
     ixm = ix - 1

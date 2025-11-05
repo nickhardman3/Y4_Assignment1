@@ -23,7 +23,7 @@ def one_energy(arr, ix, iy, nmax):
     en += 0.5 * (1.0 - 3.0 * np.cos(ang)**2)
     return en
 
-@njit(nopython=True, parallel=True, cache=True)
+@njit(nopython=True, parallel=True, cache=True) #parallel=True to distribute outer loop (i) across threads using prange()
 def all_energy(arr, nmax):
     enall = 0.0
     for i in prange(nmax):
@@ -34,7 +34,7 @@ def all_energy(arr, nmax):
     return enall
 
 @njit(nopython=True, parallel=True, cache=True)
-def get_order(arr, nmax):
+def get_order(arr, nmax): #parallelised over lattice rows using prange() for both lab vector construction and tensor summation
     Qab = np.zeros((3, 3))
     delta = np.eye(3)
     lab = np.empty((3, nmax, nmax))

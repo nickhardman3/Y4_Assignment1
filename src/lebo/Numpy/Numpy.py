@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 
-def one_energy(arr, ix, iy, nmax):
+def one_energy(arr, ix, iy, nmax): #vectorised neighbour selection using NumPy array operations to compute energy more efficiently
     ixp = (ix + 1) % nmax
     ixm = (ix - 1) % nmax
     iyp = (iy + 1) % nmax
@@ -22,7 +22,7 @@ def one_energy(arr, ix, iy, nmax):
     return en
 
 
-def all_energy(arr, nmax):
+def all_energy(arr, nmax): #fully vectorised energy calculation using np.roll to shift lattice and avoid explicit loops
     ixp = np.roll(arr, -1, axis=0)
     ixm = np.roll(arr, 1, axis=0)
     iyp = np.roll(arr, -1, axis=1)
@@ -34,7 +34,7 @@ def all_energy(arr, nmax):
     return np.sum(en)
 
 
-def get_order(arr, nmax):
+def get_order(arr, nmax): #simplified Q-tensor computation using NumPy broadcasting instead of nested loops
     lab = np.zeros((3, nmax, nmax))
     lab[0] = np.cos(arr)
     lab[1] = np.sin(arr)
@@ -47,7 +47,7 @@ def get_order(arr, nmax):
     return np.max(vals.real)
 
 
-def MC_step(arr, Ts, nmax):
+def MC_step(arr, Ts, nmax): #same algorithm as core but uses pre-generated random arrays and NumPy operations for sampling and energy tests
     scale = 0.1 + Ts
     accept = 0
     xran = np.random.randint(0, nmax, (nmax, nmax))
@@ -76,7 +76,7 @@ def initdat(nmax):
     return np.random.random_sample((nmax, nmax)) * 2.0 * np.pi
 
 
-def plotdat(arr, pflag, nmax):
+def plotdat(arr, pflag, nmax): #vectorised computation of per-site energy via np.vectorize for faster visualisation
     if pflag == 0:
         return
     u = np.cos(arr)

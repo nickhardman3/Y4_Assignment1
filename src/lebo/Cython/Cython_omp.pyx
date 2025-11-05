@@ -2,7 +2,7 @@
 import numpy as np
 cimport numpy as cnp
 from libc.math cimport cos, sin, exp
-from cython.parallel cimport prange
+from cython.parallel cimport prange #openMP-based parallelisation within Cython
 cimport openmp
 
 cnp.import_array()
@@ -33,7 +33,7 @@ cpdef double all_energy(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax):
     cdef double total = 0.0, s
     with nogil:
         s = 0.0
-        for idx in prange(nn, schedule='static'):
+        for idx in prange(nn, schedule='static'): #parallelise outer loop over rows
             i = <int>(idx // nmax)
             j = <int>(idx - i * nmax)
             s += _one_energy(a, i, j, nmax)
@@ -41,7 +41,7 @@ cpdef double all_energy(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax):
     return total
 
 
-cpdef double get_order(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax):
+cpdef double get_order(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax): #compiled with OpenMP support for parallelisable trigonometric operations
     cdef int i, j
     cdef Py_ssize_t idx, nn = nmax * nmax
     cdef cnp.ndarray[cnp.double_t, ndim=2] Qab = np.zeros((3, 3), dtype=np.float64)
@@ -95,7 +95,7 @@ cpdef double get_order(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax):
     return float(np.max(vals))
 
 
-cpdef double MC_step(cnp.ndarray[cnp.double_t, ndim=2] arr, double Ts, int nmax):
+cpdef double MC_step(cnp.ndarray[cnp.double_t, ndim=2] arr, double Ts, int nmax): #random updates and acceptance checks handled at C-level for reduced overhead
     cdef double[:, :] a = arr
     cdef double scale = 0.1 + Ts
     cdef int parity, i, j, start

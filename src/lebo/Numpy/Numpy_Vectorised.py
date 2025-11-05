@@ -22,7 +22,7 @@ def one_energy(arr, ix, iy, nmax):
         e += -0.5 * (3.0 * np.cos(d)**2 - 1.0)
     return e
 
-def all_energy(arr, nmax):
+def all_energy(arr, nmax): #simplified to a fully vectorised global energy computation using np.roll for neighbour alignment
     up    = np.roll(arr, -1, axis=0)
     down  = np.roll(arr,  1, axis=0)
     left  = np.roll(arr, -1, axis=1)
@@ -35,7 +35,7 @@ def all_energy(arr, nmax):
 
     return -0.25 * np.sum(s)
 
-def get_order(arr, nmax):
+def get_order(arr, nmax): #Q-tensor and order parameter computed directly using NumPy mean and broadcasting
     cx = np.cos(arr)
     sy = np.sin(arr)
 
@@ -48,10 +48,10 @@ def get_order(arr, nmax):
     vals = np.linalg.eigvalsh(Q)
     return float(vals[-1])
 
-def MC_step(arr, Ts, nmax):
+def MC_step(arr, Ts, nmax): #fully vectorised Monte Carlo update using array masks for checkerboard updates
     scale = 0.1 + Ts
     accept_total = 0
-    for parity in (0, 1):  
+    for parity in (0, 1): #replaces explicit loops with NumPy broadcasting and np.roll for neighbour calculations
         mask = (np.add.outer(np.arange(nmax), np.arange(nmax)) % 2 == parity)
 
         proposal = arr.copy()
@@ -83,7 +83,7 @@ def MC_step(arr, Ts, nmax):
 def initdat(nmax):
     return np.random.random_sample((nmax, nmax)) * 2.0 * np.pi
 
-def plotdat(arr, pflag, nmax):
+def plotdat(arr, pflag, nmax): #modified to use array-based operations for computing local energies and colour maps
     if pflag == 0:
         return
     u = np.cos(arr)
@@ -91,7 +91,7 @@ def plotdat(arr, pflag, nmax):
     x = np.arange(nmax)
     y = np.arange(nmax)
 
-    if pflag == 1:
+    if pflag == 1: #uses np.roll for neighbouring sites rather than recomputation in loops
         mpl.rc('image', cmap='rainbow')
         up    = np.roll(arr, -1, axis=0)
         down  = np.roll(arr,  1, axis=0)

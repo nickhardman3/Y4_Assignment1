@@ -34,7 +34,7 @@ def all_energy(arr, nmax):
     return np.sum(en)
 
 
-def get_order(arr, nmax):
+def get_order(arr, nmax): #uses explicit nested loops for Q-tensor calculation rather than NumPy matrix operations
     lab = np.zeros((3, nmax, nmax))
     lab[0] = np.cos(arr)
     lab[1] = np.sin(arr)
@@ -47,7 +47,7 @@ def get_order(arr, nmax):
     return np.max(vals.real)
 
 
-def MC_step(arr, Ts, nmax):
+def MC_step(arr, Ts, nmax): #uses per-site random angles instead of pre-vectorised array updates for closer control and reproducibility
     scale = 0.1 + Ts
     accept = 0
     aran = np.random.normal(0.0, scale, (nmax, nmax))
@@ -72,7 +72,7 @@ def initdat(nmax):
     return np.random.random_sample((nmax, nmax)) * 2.0 * np.pi
 
 
-def plotdat(arr, pflag, nmax):
+def plotdat(arr, pflag, nmax): #adjusted visualisation to compute per-site energy sequentially with np.vectorize for energy plots
     if pflag == 0:
         return
     u = np.cos(arr)

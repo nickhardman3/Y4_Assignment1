@@ -1,7 +1,7 @@
 import numpy as np
 from mpi4py import MPI
 
-def _decompose_rows(nmax, size, rank):
+def _decompose_rows(nmax, size, rank): #divides the lattice rows between MPI processes as evenly as possible
     base = nmax // size
     extra = nmax % size
     if rank < extra:
@@ -10,14 +10,14 @@ def _decompose_rows(nmax, size, rank):
     else:
         rows = base
         start = rank * base + extra
-    return start, rows
+    return start, rows #returns the starting row index and number of rows assigned to this rank
 
 
-def _halo_exchange_nb(local, comm, rank, size):
+def _halo_exchange_nb(local, comm, rank, size):  #performs non-blocking halo exchage using Isend/Irecv to update ghost rows
     up = (rank - 1 + size) % size
     dn = (rank + 1) % size
     reqs = [
-        comm.Isend([local[1, :], MPI.DOUBLE], dest=up, tag=11),
+        comm.Isend([local[1, :], MPI.DOUBLE], dest=up, tag=11), #sends boundary rows to neighbouring ranks for periodic boundaries
         comm.Irecv([local[0, :], MPI.DOUBLE], source=up, tag=22),
         comm.Isend([local[-2, :], MPI.DOUBLE], dest=dn, tag=22),
         comm.Irecv([local[-1, :], MPI.DOUBLE], source=dn, tag=11),
@@ -26,7 +26,7 @@ def _halo_exchange_nb(local, comm, rank, size):
 
 
 def _halo_exchange(local, nmax, comm, rank, size):
-    MPI.Request.Waitall(_halo_exchange_nb(local, comm, rank, size))
+    MPI.Request.Waitall(_halo_exchange_nb(local, comm, rank, size)) #waits for communication requests to complete
 
 
 def _one_energy(a, ix, iy, nmax):
@@ -42,7 +42,7 @@ def _one_energy(a, ix, iy, nmax):
     return en
 
 
-def _energy_local(a, nmax, rows):
+def _energy_local(a, nmax, rows): #computes total local energy for this rank’s assigned rows (excluding halos)
     s = 0.0
     for i in range(1, rows + 1):
         for j in range(nmax):
@@ -50,12 +50,12 @@ def _energy_local(a, nmax, rows):
     return s
 
 
-def _order_local(a, nmax, rows):
+def _order_local(a, nmax, rows): #computes local contributions to the nematic order tensor
     q00 = 0.0
     q11 = 0.0
     q01 = 0.0
     N2 = float(nmax * nmax)
-    for i in range(1, rows + 1):
+    for i in range(1, rows + 1): #each rank accumulates partial results which are reduced globally later
         for j in range(nmax):
             c = np.cos(a[i, j])
             s = np.sin(a[i, j])
@@ -66,7 +66,7 @@ def _order_local(a, nmax, rows):
     return q00 * scale, q11 * scale, q01 * scale
 
 
-def _mc_half_sweep_interior(a, angles, uniforms, nmax, rows, start_row, end_row, parity, g_start, Ts):
+def _mc_half_sweep_interior(a, angles, uniforms, nmax, rows, start_row, end_row, parity, g_start, Ts): #performs a half-sweep of the checkerboard 
     acc = 0
     for i_local in range(start_row, end_row + 1):
         g_i = g_start + (i_local - 1)
@@ -92,25 +92,25 @@ def one_energy(arr, ix, iy, nmax):
     return _one_energy(arr, ix, iy, nmax)
 
 
-def all_energy(arr_global_like, nmax):
+def all_energy(arr_global_like, nmax):#calculates global system energy by summing local energies from all ranks
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     start, rows = _decompose_rows(nmax, comm.Get_size(), rank)
     local = _STATE['local']
-    _halo_exchange(local, nmax, comm, rank, comm.Get_size())
+    _halo_exchange(local, nmax, comm, rank, comm.Get_size()) #halo exchange before summing to include boundary interactions correctly
     s = _energy_local(local, nmax, rows)
-    return comm.allreduce(s, op=MPI.SUM)
+    return comm.allreduce(s, op=MPI.SUM) #allreduce() combines partial results across processes
 
 
-def get_order(arr_global_like, nmax):
+def get_order(arr_global_like, nmax): #computes global order parameter by summing local Q-tensor contributions
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     start, rows = _decompose_rows(nmax, comm.Get_size(), rank)
     local = _STATE['local']
-    _halo_exchange(local, nmax, comm, rank, comm.Get_size())
+    _halo_exchange(local, nmax, comm, rank, comm.Get_size()) 
     q00_l, q11_l, q01_l = _order_local(local, nmax, rows)
     vec = np.array([q00_l, q11_l, q01_l], dtype=np.float64)
-    comm.Allreduce(MPI.IN_PLACE, vec, op=MPI.SUM)
+    comm.Allreduce(MPI.IN_PLACE, vec, op=MPI.SUM)  #uses Allreduce to combine q00, q11, q01 across ranks into full tensor
     Q = np.array([[vec[0], vec[2], 0.0],
                   [vec[2], vec[1], 0.0],
                   [0.0,    0.0,   -0.5]])
@@ -118,7 +118,7 @@ def get_order(arr_global_like, nmax):
     return float(np.max(vals))
 
 
-def MC_step(arr_global_like, Ts, nmax):
+def MC_step(arr_global_like, Ts, nmax):#performs one complete Monte Carlo step across all MPI processes
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
@@ -149,7 +149,7 @@ def initdat(nmax):
 
 
 def plotdat(arr, pflag, nmax):
-    if pflag == 0:
+    if pflag == 0:#gathers distributed lattice data from all ranks to rank 0 for visualisation
         return
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
@@ -166,7 +166,7 @@ def plotdat(arr, pflag, nmax):
             displs.append(displs[-1] + counts[r-1])
     else:
         recvbuf = None; displs = None
-    comm.Gatherv(sendbuf.ravel(), (recvbuf, counts, displs, MPI.DOUBLE), root=0)
+    comm.Gatherv(sendbuf.ravel(), (recvbuf, counts, displs, MPI.DOUBLE), root=0) #MPI Gatherv to collect variable-sized row blocks into the full array
     if rank == 0:
         full = recvbuf.reshape(nmax, nmax)
         import matplotlib.pyplot as plt

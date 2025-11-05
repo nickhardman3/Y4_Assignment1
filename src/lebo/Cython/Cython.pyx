@@ -5,7 +5,7 @@ from libc.math cimport cos, sin, exp
 
 cnp.import_array()
 
-cdef inline double _one_energy(double[:, :] arr, int ix, int iy, int nmax) nogil:
+cdef inline double _one_energy(double[:, :] arr, int ix, int iy, int nmax) nogil: 
     cdef int ixp = (ix + 1) % nmax
     cdef int ixm = (ix - 1 + nmax) % nmax
     cdef int iyp = (iy + 1) % nmax
@@ -19,12 +19,12 @@ cdef inline double _one_energy(double[:, :] arr, int ix, int iy, int nmax) nogil
     return en
 
 
-cpdef double one_energy(cnp.ndarray[cnp.double_t, ndim=2] arr, int ix, int iy, int nmax):
+cpdef double one_energy(cnp.ndarray[cnp.double_t, ndim=2] arr, int ix, int iy, int nmax): #typed memoryviews instead of NumPy arrays
     cdef double[:, :] a = arr
     return _one_energy(a, ix, iy, nmax)
 
 
-cpdef double all_energy(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax):
+cpdef double all_energy(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax): #operates directly on contiguous memory buffers, avoiding Python object creation
     cdef double[:, :] a = arr
     cdef int i, j
     cdef double enall = 0.0
@@ -35,7 +35,7 @@ cpdef double all_energy(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax):
     return enall
 
 
-cpdef double get_order(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax):
+cpdef double get_order(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax): #Q-tensor components and trigonometric operations implemented using typed double variables
     cdef int i, j, a, b
     cdef cnp.ndarray[cnp.double_t, ndim=2] Qab = np.zeros((3, 3), dtype=np.float64)
     cdef double[:, :] Q = Qab
@@ -58,8 +58,8 @@ cpdef double get_order(cnp.ndarray[cnp.double_t, ndim=2] arr, int nmax):
     return float(np.max(vals))
 
 
-cpdef double MC_step(cnp.ndarray[cnp.double_t, ndim=2] arr, double Ts, int nmax):
-    cdef double[:, :] a = arr
+cpdef double MC_step(cnp.ndarray[cnp.double_t, ndim=2] arr, double Ts, int nmax): #core Metropolis step rewritten in Cython to reduce overhead from Python loops and random generation
+    cdef double[:, :] a = arr                                                     #uses C API for random numbers and array access through C memoryviews
     cdef double scale = 0.1 + Ts
     cdef int i, j, ix, iy, accept = 0
     cdef double ang, en0, en1, boltz, u
